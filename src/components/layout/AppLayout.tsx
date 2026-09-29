@@ -1,8 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
-import { api } from "@/convex/_generated/api";
 import { useMutation } from "convex/react";
-import { useEffect } from "react";
+import { api } from "@/convex/_generated/api";
+import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import {
   Sidebar,
@@ -45,10 +45,17 @@ export function AppLayout() {
   const { isDark, toggle } = useTheme();
   const navigate = useNavigate();
   const promoteFirstUser = useMutation(api.users.promoteFirstUser);
+  const ensureDemoData = useMutation(api.demo.ensureDemoData);
+  const seedRequested = useRef(false);
 
+  // Primer uso de la plataforma: roles + datos demo (sensor BLE + gateway + dashboard)
   useEffect(() => {
     void promoteFirstUser();
-  }, [promoteFirstUser]);
+    if (!seedRequested.current) {
+      seedRequested.current = true;
+      void ensureDemoData();
+    }
+  }, [promoteFirstUser, ensureDemoData]);
 
   const isAdmin = user?.role === "admin";
   const initials = (user?.name || user?.email || "U")
@@ -200,3 +207,5 @@ export function AppLayout() {
     </SidebarProvider>
   );
 }
+
+export default AppLayout;

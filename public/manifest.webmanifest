@@ -1,11 +1,11 @@
 {
-  "name": "freebuff.com application",
-  "short_name": "freebuff.com",
-  "description": "freebuff.com application",
+  "name": "Nexus IoT · Monitoreo HVAC",
+  "short_name": "Nexus IoT",
+  "description": "Plataforma propia de monitoreo y control HVAC: sensores BLE de temperatura y humedad, gateways y dashboards en tiempo real.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#0e7490",
   "icons": [
     {
       "src": "/logo.svg",

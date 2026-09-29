@@ -1,7 +1,7 @@
-import { internalMutation } from "./_generated/server";
+import { internalMutation, mutation } from "./_generated/server";
 
 /** Crea datos demo la primera vez: gateway + sensor BLE con 24 h de historial. */
-export const ensureDemoData = internalMutation({
+export const ensureDemoData = mutation({
   args: {},
   handler: async (ctx) => {
     // No repetir el seed si ya se hizo antes

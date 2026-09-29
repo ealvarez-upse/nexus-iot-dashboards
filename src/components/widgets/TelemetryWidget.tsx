@@ -63,13 +63,13 @@ export function TelemetryWidget({
   onRemove?: () => void;
 }) {
   const series = useQuery(api.devices.latestSeries, {
-    deviceId: widget.deviceId,
+    deviceId: widget.deviceId as never,
     keys: [widget.dataKey],
     limit: 240,
   }) as Record<string, { ts: number; value: number }[]> | undefined;
 
   const data = series?.[widget.dataKey] ?? [];
-  const current = data.at(-1)?.value;
+  const current = data.length > 0 ? data[data.length - 1].value : undefined;
   const Icon = keyIcon(widget.dataKey);
   const color = widget.color ?? "#0891b2";
   const resolvedUnit = unit ?? widget.unit ?? "";
