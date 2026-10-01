@@ -243,10 +243,10 @@ export default function DevicesPage() {
           </p>
         </div>
       ) : (
-        <div className="card-layered overflow-hidden rounded-xl border bg-card">
+        <div className="glass overflow-hidden rounded-xl border">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
+            <TableHeader className="sticky top-14 z-10 bg-card/95 backdrop-blur">
+              <TableRow className="hover:bg-transparent">
                 <TableHead>Dispositivo</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Temperatura</TableHead>

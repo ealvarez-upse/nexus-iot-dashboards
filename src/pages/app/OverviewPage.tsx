@@ -53,7 +53,7 @@ export default function OverviewPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {stats.map((s) => (
-          <Card key={s.label} className="card-layered">
+          <Card key={s.label} className="card-layered hover-lift">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-muted-foreground">{s.label}</p>
@@ -74,7 +74,7 @@ export default function OverviewPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Dispositivos recientes */}
-        <Card className="card-layered">
+        <Card className="glass">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Dispositivos</CardTitle>
           </CardHeader>
@@ -128,7 +128,7 @@ export default function OverviewPage() {
         </Card>
 
         {/* Actividad */}
-        <Card className="card-layered">
+        <Card className="glass">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Actividad reciente</CardTitle>
           </CardHeader>

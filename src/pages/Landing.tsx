@@ -64,7 +64,7 @@ function RotatingWord() {
     return () => clearInterval(t);
   }, []);
   return (
-    <span className="relative inline-block text-primary">
+    <span className="text-gradient relative inline-block">
       <AnimatePresence mode="wait">
         <motion.span
           key={i}
@@ -93,7 +93,7 @@ function DashboardMock() {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.2 }}
-      className="card-layered rounded-2xl border border-border/60 bg-card p-4"
+      className="glass rounded-2xl p-4"
     >
       <div className="flex items-center justify-between border-b border-border/60 pb-3">
         <div className="flex items-center gap-2">
@@ -106,7 +106,7 @@ function DashboardMock() {
           </div>
         </div>
         <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-          <Wifi className="size-3" /> En línea
+          <span className="live-dot" /> En línea
         </span>
       </div>
 
@@ -170,7 +170,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
+      <header className="glass-header sticky top-0 z-40 border-b border-border/60">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 md:px-6">
           <Link to="/" className="flex items-center gap-2.5">
             <BrandMark className="h-9 w-auto" />
@@ -298,7 +298,7 @@ export default function Landing() {
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.45, delay: (i % 3) * 0.08 }}
               >
-                <Card className="card-layered h-full p-6 transition hover:border-primary/40">
+                <Card className="card-layered hover-lift h-full cursor-pointer p-6 transition hover:border-primary/40">
                   <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <a.icon className="size-5" />
                   </div>
@@ -391,7 +391,7 @@ export default function Landing() {
                 ],
               },
             ].map((p) => (
-              <Card key={p.name} className="card-layered p-7">
+              <Card key={p.name} className="card-layered hover-lift p-7">
                 <div className="flex items-start justify-between">
                   <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <p.icon className="size-6" />
@@ -450,7 +450,7 @@ export default function Landing() {
                 desc: "El administrador gestiona usuarios y roles; tu equipo construye dashboards y conecta dispositivos sin fricción.",
               },
             ].map((f) => (
-              <Card key={f.title} className="card-layered p-7">
+              <Card key={f.title} className="card-layered hover-lift p-7">
                 <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <f.icon className="size-5" />
                 </div>
@@ -473,7 +473,7 @@ export default function Landing() {
           </div>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
-              <Card key={s.title} className="card-layered p-6">
+              <Card key={s.title} className="card-layered hover-lift p-6">
                 <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <s.icon className="size-5" />
                 </div>

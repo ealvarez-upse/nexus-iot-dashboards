@@ -43,6 +43,14 @@ export function AppLayout() {
   const seedRequested = useRef(false);
 
   const activeAlarms = useQuery(api.alarms.activeCount) ?? 0;
+  const devices = useQuery(api.devices.list);
+
+  // "En vivo" solo si hay telemetría fresca (honestidad de datos, patrón real-time)
+  const lastSeen = (devices ?? []).reduce(
+    (max, d) => (d.lastSeenAt && d.lastSeenAt > max ? d.lastSeenAt : max),
+    0,
+  );
+  const live = lastSeen > 0 && Date.now() - lastSeen < 10 * 60 * 1000;
 
   // Primer uso de la plataforma: roles + datos demo (sensor BLE + gateway + dashboard)
   useEffect(() => {
@@ -64,7 +72,7 @@ export function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Barra superior estilo ThingsBoard */}
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/70 bg-background/95 px-3 backdrop-blur md:px-5">
+      <header className="glass-header sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/70 px-3 md:px-5">
         {/* Marca */}
         <a href="/app" className="flex shrink-0 items-center gap-2.5 pr-2">
           <img src="/imind-logo.png" alt="Imind IoT" className="h-7 w-auto" />
@@ -83,7 +91,7 @@ export function AppLayout() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  "relative flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  "relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200",
                   isActive
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -120,6 +128,23 @@ export function AppLayout() {
 
         {/* Acciones */}
         <div className="flex shrink-0 items-center gap-1.5">
+          {/* Estado de telemetría: verde con pulso = en vivo; gris = sin datos frescos */}
+          <span
+            className="mr-1 hidden items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:inline-flex"
+            title={live ? "Último reporte recibido recientemente" : "Sin telemetría en los últimos 10 minutos"}
+          >
+            {live ? (
+              <>
+                <span className="live-dot" />
+                <span className="text-success">En vivo</span>
+              </>
+            ) : (
+              <>
+                <span className="size-2 rounded-full bg-muted-foreground/40" />
+                <span className="text-muted-foreground">Sin datos</span>
+              </>
+            )}
+          </span>
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Cambiar tema">
             {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>

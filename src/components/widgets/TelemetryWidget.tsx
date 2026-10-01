@@ -110,7 +110,7 @@ export function TelemetryWidget({
   }
 
   return (
-    <Card className="card-layered group relative overflow-hidden p-5">
+    <Card className="glass group relative overflow-hidden rounded-xl p-5 hover-lift">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <div
@@ -156,10 +156,10 @@ export function TelemetryWidget({
                     current === undefined
                       ? "var(--muted)"
                       : current > 50
-                        ? "#0d9488"
+                        ? "var(--success)"
                         : current > 20
-                          ? "#ca8a04"
-                          : "#dc2626",
+                          ? "var(--warning)"
+                          : "var(--destructive)",
                 }}
               />
             </div>
@@ -173,9 +173,9 @@ export function TelemetryWidget({
             {activeAlarms === undefined ? (
               <Skeleton className="h-16 w-full" />
             ) : activeAlarms.length === 0 ? (
-              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 p-3">
-                <BellOff className="size-4 text-emerald-500" />
-                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-2 rounded-lg bg-success/10 p-3">
+                <BellOff className="size-4 text-success" />
+                <p className="text-sm text-success">
                   Sin alarmas activas
                 </p>
               </div>
@@ -184,12 +184,12 @@ export function TelemetryWidget({
                 <div
                   key={a._id}
                   className={`flex items-center gap-2 rounded-lg p-2.5 ${
-                    a.severity === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                    a.severity === "critical" ? "bg-destructive/10" : "bg-warning/15"
                   }`}
                 >
                   <BellRing
                     className={`size-4 shrink-0 ${
-                      a.severity === "critical" ? "text-destructive" : "text-amber-500"
+                      a.severity === "critical" ? "text-destructive" : "text-warning"
                     }`}
                   />
                   <div className="min-w-0 flex-1">

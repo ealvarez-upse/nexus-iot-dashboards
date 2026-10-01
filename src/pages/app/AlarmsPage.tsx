@@ -161,10 +161,10 @@ export default function AlarmsPage() {
           ) : null}
         </div>
       ) : (
-        <div className="card-layered overflow-hidden rounded-xl border bg-card">
+        <div className="glass overflow-hidden rounded-xl border">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
+            <TableHeader className="sticky top-14 z-10 bg-card/95 backdrop-blur">
+              <TableRow className="hover:bg-transparent">
                 <TableHead>Severidad</TableHead>
                 <TableHead>Dispositivo</TableHead>
                 <TableHead>Condición</TableHead>
@@ -178,14 +178,14 @@ export default function AlarmsPage() {
               {filtered.map((a) => {
                 const Icon = keyIcon(a.dataKey);
                 return (
-                  <TableRow key={a._id} className={a.open && a.severity === "critical" ? "bg-destructive/5" : undefined}>
+                  <TableRow key={a._id} className={a.open && a.severity === "critical" ? "cursor-pointer bg-destructive/5" : "cursor-pointer"}>
                     <TableCell>
                       {a.severity === "critical" ? (
                         <Badge className="gap-1 border-transparent bg-destructive text-white">
                           <BellRing className="size-3" /> Crítica
                         </Badge>
                       ) : (
-                        <Badge className="gap-1 border-transparent bg-amber-500 text-white">
+                        <Badge className="gap-1 border-transparent bg-warning text-amber-950">
                           <BellRing className="size-3" /> Aviso
                         </Badge>
                       )}
