@@ -24,6 +24,7 @@ const DeviceDetailPage = lazy(() => import("./pages/app/DeviceDetailPage.tsx"));
 const DashboardsPage = lazy(() => import("./pages/app/DashboardsPage.tsx"));
 const DashboardViewPage = lazy(() => import("./pages/app/DashboardViewPage.tsx"));
 const UsersPage = lazy(() => import("./pages/app/UsersPage.tsx"));
+const AlarmsPage = lazy(() => import("./pages/app/AlarmsPage.tsx"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -148,6 +149,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="dispositivos/:id" element={<DeviceDetailPage />} />
                   <Route path="dashboards" element={<DashboardsPage />} />
                   <Route path="dashboards/:id" element={<DashboardViewPage />} />
+                  <Route path="alarmas" element={<AlarmsPage />} />
                   <Route path="usuarios" element={<UsersPage />} />
                 </Route>
                 <Route

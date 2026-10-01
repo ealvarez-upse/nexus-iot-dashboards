@@ -16,6 +16,19 @@ export const roleValidator = v.union(
 );
 export type Role = Infer<typeof roleValidator>;
 
+/** Umbrales de alarma por clave de telemetría (estilo ThingsBoard). */
+export const thresholdRangeValidator = v.object({
+  min: v.optional(v.number()),
+  max: v.optional(v.number()),
+});
+
+export const thresholdsValidator = v.object({
+  temperature: v.optional(thresholdRangeValidator),
+  humidity: v.optional(thresholdRangeValidator),
+  battery: v.optional(thresholdRangeValidator),
+});
+export type Thresholds = Infer<typeof thresholdsValidator>;
+
 const schema = defineSchema(
   {
     // default auth tables using convex auth.
@@ -32,7 +45,7 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // ===== Nexus IoT =====
+    // ===== Imind IoT =====
 
     // Gateways y sensores (BLE Joyway → Gateway → HTTP API)
     devices: defineTable({
@@ -43,6 +56,7 @@ const schema = defineSchema(
       lastSeenAt: v.optional(v.number()),
       battery: v.optional(v.number()), // % para sensores BLE
       isDemo: v.optional(v.boolean()),
+      thresholds: v.optional(thresholdsValidator),
       createdBy: v.optional(v.id("users")),
     })
       .index("by_token", ["token"])
@@ -58,6 +72,31 @@ const schema = defineSchema(
       .index("by_device_ts", ["deviceId", "ts"])
       .index("by_device_key_ts", ["deviceId", "key", "ts"]),
 
+    // Alarmas: se crean al superar umbrales y se cierran al volver al rango
+    alarms: defineTable({
+      deviceId: v.id("devices"),
+      deviceName: v.string(),
+      dataKey: v.string(),
+      type: v.union(v.literal("max"), v.literal("min")),
+      threshold: v.number(),
+      value: v.number(),
+      severity: v.union(v.literal("critical"), v.literal("warning")),
+      status: v.union(
+        v.literal("active_unack"),
+        v.literal("active_ack"),
+        v.literal("cleared_unack"),
+        v.literal("cleared_ack"),
+      ),
+      open: v.boolean(),
+      startTs: v.number(),
+      endTs: v.optional(v.number()),
+      ackTs: v.optional(v.number()),
+      ackBy: v.optional(v.id("users")),
+    })
+      .index("by_ts", ["startTs"])
+      .index("by_device", ["deviceId"])
+      .index("by_open", ["open"]),
+
     // Dashboards con layout y widgets persistentes
     dashboards: defineTable({
       name: v.string(),
@@ -69,6 +108,8 @@ const schema = defineSchema(
             v.literal("timeSeries"),
             v.literal("valueCard"),
             v.literal("gauge"),
+            v.literal("battery"),
+            v.literal("alarms"),
           ),
           title: v.string(),
           deviceId: v.id("devices"),

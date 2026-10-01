@@ -2,7 +2,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatTime } from "@/lib/format";
+import { formatTime, timeAgo } from "@/lib/format";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -11,12 +11,22 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ReferenceLine,
   RadialBarChart,
   RadialBar,
   PolarAngleAxis,
 } from "recharts";
 import type { WidgetConfig } from "./types";
-import { Activity, BatteryCharging, Droplets, Thermometer, Gauge as GaugeIcon, Minus } from "lucide-react";
+import {
+  Activity,
+  BatteryCharging,
+  BellOff,
+  BellRing,
+  Droplets,
+  Thermometer,
+  Gauge as GaugeIcon,
+  Minus,
+} from "lucide-react";
 
 function keyIcon(key: string) {
   const k = key.toLowerCase();
@@ -68,11 +78,26 @@ export function TelemetryWidget({
     limit: 240,
   }) as Record<string, { ts: number; value: number }[]> | undefined;
 
+  const device = useQuery(api.devices.get, { id: widget.deviceId as never });
+  const activeAlarms = useQuery(
+    api.alarms.list,
+    widget.type === "alarms"
+      ? { deviceId: widget.deviceId as never, status: "active", limit: 5 }
+      : "skip",
+  );
+
   const data = series?.[widget.dataKey] ?? [];
   const current = data.length > 0 ? data[data.length - 1].value : undefined;
   const Icon = keyIcon(widget.dataKey);
   const color = widget.color ?? "#0891b2";
   const resolvedUnit = unit ?? widget.unit ?? "";
+
+  // Umbrales del dispositivo para dibujar líneas de límite en la serie
+  const thresholds = device?.thresholds as
+    | { temperature?: { min?: number; max?: number }; humidity?: { min?: number; max?: number }; battery?: { min?: number; max?: number } }
+    | undefined;
+  const range =
+    thresholds?.[widget.dataKey as "temperature" | "humidity" | "battery"];
 
   if (series === undefined) {
     return (
@@ -114,6 +139,70 @@ export function TelemetryWidget({
 
       <div className="mt-4">
         {widget.type === "valueCard" && <CurrentValue value={current} unit={resolvedUnit} />}
+        {widget.type === "battery" && (
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="font-mono text-4xl font-bold tracking-tight">
+                {current !== undefined ? Math.round(current) : "—"}
+              </span>
+              <span className="text-lg font-medium text-muted-foreground">%</span>
+            </div>
+            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.max(0, Math.min(100, current ?? 0))}%`,
+                  backgroundColor:
+                    current === undefined
+                      ? "var(--muted)"
+                      : current > 50
+                        ? "#0d9488"
+                        : current > 20
+                          ? "#ca8a04"
+                          : "#dc2626",
+                }}
+              />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {device?.lastSeenAt ? `Último reporte: ${timeAgo(device.lastSeenAt)}` : "Sin reportes"}
+            </p>
+          </div>
+        )}
+        {widget.type === "alarms" && (
+          <div className="flex flex-col gap-2">
+            {activeAlarms === undefined ? (
+              <Skeleton className="h-16 w-full" />
+            ) : activeAlarms.length === 0 ? (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 p-3">
+                <BellOff className="size-4 text-emerald-500" />
+                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                  Sin alarmas activas
+                </p>
+              </div>
+            ) : (
+              activeAlarms.map((a) => (
+                <div
+                  key={a._id}
+                  className={`flex items-center gap-2 rounded-lg p-2.5 ${
+                    a.severity === "critical" ? "bg-destructive/10" : "bg-amber-500/10"
+                  }`}
+                >
+                  <BellRing
+                    className={`size-4 shrink-0 ${
+                      a.severity === "critical" ? "text-destructive" : "text-amber-500"
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium">
+                      {a.dataKey} {a.type === "max" ? "sobre" : "bajo"} {a.threshold}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{timeAgo(a.startTs)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
         {widget.type === "gauge" && (
           <div className="relative mx-auto h-40 w-full max-w-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -162,6 +251,22 @@ export function TelemetryWidget({
                   domain={["auto", "auto"]}
                 />
                 <Tooltip content={<ChartTooltip unit={resolvedUnit} />} />
+                {range?.max !== undefined && (
+                  <ReferenceLine
+                    y={range.max}
+                    stroke="#dc2626"
+                    strokeDasharray="5 4"
+                    label={{ value: `máx ${range.max}`, fill: "#dc2626", fontSize: 9, position: "insideTopRight" }}
+                  />
+                )}
+                {range?.min !== undefined && (
+                  <ReferenceLine
+                    y={range.min}
+                    stroke="#2563eb"
+                    strokeDasharray="5 4"
+                    label={{ value: `mín ${range.min}`, fill: "#2563eb", fontSize: 9, position: "insideTopRight" }}
+                  />
+                )}
                 <Area
                   type="monotone"
                   dataKey="value"

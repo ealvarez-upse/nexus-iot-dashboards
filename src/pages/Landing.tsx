@@ -1,14 +1,14 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
-import logo from "@/assets/logo.svg";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AnimatePresence, motion } from "framer-motion";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { Area, AreaChart, ReferenceLine, ResponsiveContainer } from "recharts";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowRight,
+  Bell,
   BatteryCharging,
   Building2,
   CheckCircle2,
@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Snowflake,
   Sun,
+  Table2,
   Terminal,
   Thermometer,
   Waves,
@@ -41,7 +42,7 @@ const MOCK_24H = Array.from({ length: 48 }, (_, i) => ({
 }));
 
 const APPLICATIONS = [
-  { icon: Snowflake, title: "Habitaciones frías", desc: "Cadena de frío bajo control con umbrales claros y graficas de tendencia." },
+  { icon: Snowflake, title: "Habitaciones frías", desc: "Cadena de frío bajo control con umbrales claros y alarmas automáticas." },
   { icon: Building2, title: "Oficinas y locales", desc: "Confort térmico y humedad para tus espacios de trabajo." },
   { icon: Server, title: "Cuartos de servidores", desc: "Vigila temperatura crítica de racks y cuartos técnicos." },
   { icon: Warehouse, title: "Almacenes y bodegas", desc: "Cobertura total de zonas de almacenamiento sin cableado." },
@@ -52,8 +53,8 @@ const APPLICATIONS = [
 const STEPS = [
   { icon: Thermometer, title: "1 · Sensor BLE", desc: "Los sensores Joyway miden temperatura y humedad y transmiten por Bluetooth." },
   { icon: RadioTower, title: "2 · Gateway", desc: "El gateway JW1602G4 recibe todos los sensores y publica vía HTTP." },
-  { icon: LayoutDashboard, title: "3 · Plataforma", desc: "Nexus IoT ingresa la telemetría y la convierte en gráficas en vivo." },
-  { icon: Gauge, title: "4 · Decisiones", desc: "Tu equipo monitorea dashboards y actúa antes de que algo falle." },
+  { icon: LayoutDashboard, title: "3 · Plataforma", desc: "Imind IoT ingresa la telemetría, evalúa umbrales y dibuja gráficas en vivo." },
+  { icon: Bell, title: "4 · Alarmas", desc: "Si algo sale de rango, tu equipo recibe una alarma y actúa a tiempo." },
 ];
 
 function RotatingWord() {
@@ -77,6 +78,12 @@ function RotatingWord() {
         </motion.span>
       </AnimatePresence>
     </span>
+  );
+}
+
+function BrandMark({ className }: { className?: string }) {
+  return (
+    <img src="/imind-logo.png" alt="Imind IoT" className={className} />
   );
 }
 
@@ -123,7 +130,7 @@ function DashboardMock() {
       </div>
 
       <div className="mt-3 rounded-xl bg-secondary/40 p-3">
-        <p className="mb-1 text-[11px] font-medium text-muted-foreground">Temperatura · últimas 24 h</p>
+        <p className="mb-1 text-[11px] font-medium text-muted-foreground">Temperatura · últimas 24 h · límite 6 °C</p>
         <div className="h-32 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={MOCK_24H} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
@@ -141,6 +148,12 @@ function DashboardMock() {
                 fill="url(#hero-temp)"
                 isAnimationActive={false}
                 dot={false}
+              />
+              <ReferenceLine
+                y={6}
+                stroke="#dc2626"
+                strokeDasharray="5 4"
+                label={{ value: "límite", fill: "#dc2626", fontSize: 10, position: "insideTopRight" }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -160,9 +173,9 @@ export default function Landing() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 md:px-6">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src={logo} alt="Nexus IoT" className="size-9 rounded-lg" />
+            <BrandMark className="h-9 w-auto" />
             <div className="leading-tight">
-              <p className="font-bold tracking-tight">Nexus IoT</p>
+              <p className="font-bold tracking-tight">Imind IoT</p>
               <p className="text-[11px] text-muted-foreground">Monitoreo HVAC</p>
             </div>
           </Link>
@@ -273,7 +286,7 @@ export default function Landing() {
             <h2 className="text-3xl font-bold tracking-tight">¿Qué quieres monitorear?</h2>
             <p className="mt-3 text-muted-foreground">
               Un mismo sistema, infinidad de aplicaciones. Estos son los ambientes
-              que nuestros clientes ya vigilan con Nexus IoT.
+              que nuestros clientes ya vigilan con Imind IoT.
             </p>
           </div>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -309,7 +322,7 @@ export default function Landing() {
               Tus datos son tuyos. Punto.
             </h2>
             <p className="mt-4 max-w-lg leading-7 text-zinc-400">
-              A diferencia de plataformas cerradas, Nexus IoT corre sobre tu
+              A diferencia de plataformas cerradas, Imind IoT corre sobre tu
               infraestructura: controlas el acceso, el historial y la información
               generada por tus sensores.
             </p>
@@ -318,6 +331,7 @@ export default function Landing() {
                 "Historial completo de telemetría, sin muestreos ocultos",
                 "Roles de administrador y equipo con acceso controlado",
                 "API HTTP abierta compatible con tus integraciones",
+                "Alarmas por umbral con registro y confirmación",
                 "Sin dependencia de proveedores para ver tus propios datos",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
@@ -418,7 +432,12 @@ export default function Landing() {
               {
                 icon: Gauge,
                 title: "Dashboards en tiempo real",
-                desc: "Constructor visual de widgets: series temporales, valores actuales e indicadores, con colores y tamaños configurables.",
+                desc: "Constructor visual de widgets: series temporales, valores actuales, indicadores y estado de batería, con colores y tamaños configurables.",
+              },
+              {
+                icon: Table2,
+                title: "Gestión tipo ThingsBoard",
+                desc: "Tablas de dispositivos y alarmas con búsqueda, filtros y acciones rápidas. Familiares para quien ya usaba ThingsBoard, con mejores gráficas.",
               },
               {
                 icon: Terminal,
@@ -475,7 +494,7 @@ export default function Landing() {
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   Tu gateway ya sabe publicar telemetría vía HTTP. Solo cambia la URL
-                  de destino por la de Nexus IoT con el token de tu dispositivo — el
+                  de destino por la de Imind IoT con el token de tu dispositivo — el
                   payload no necesita ningún cambio.
                 </p>
               </div>
@@ -523,14 +542,14 @@ export default function Landing() {
       <footer className="border-t border-border/60">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <div className="flex items-center gap-2.5">
-            <img src={logo} alt="Nexus IoT" className="size-8 rounded-lg" />
+            <BrandMark className="h-8 w-auto" />
             <div className="leading-tight">
-              <p className="text-sm font-bold">Nexus IoT</p>
+              <p className="text-sm font-bold">Imind IoT</p>
               <p className="text-[11px] text-muted-foreground">Monitoreo HVAC</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Nexus IoT · Plataforma propia de monitoreo y control HVAC
+            © {new Date().getFullYear()} Imind IoT · Plataforma propia de monitoreo y control HVAC
           </p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <a href="#aplicaciones" className="hover:text-foreground">Aplicaciones</a>

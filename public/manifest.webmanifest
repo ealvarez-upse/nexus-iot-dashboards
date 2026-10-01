@@ -1,6 +1,6 @@
 {
-  "name": "Nexus IoT · Monitoreo HVAC",
-  "short_name": "Nexus IoT",
+  "name": "Imind IoT · Monitoreo HVAC",
+  "short_name": "Imind IoT",
   "description": "Plataforma propia de monitoreo y control HVAC: sensores BLE de temperatura y humedad, gateways y dashboards en tiempo real.",
   "start_url": "/",
   "display": "standalone",
@@ -8,9 +8,9 @@
   "theme_color": "#0e7490",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/imind-logo.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

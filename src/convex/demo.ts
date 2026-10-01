@@ -47,9 +47,10 @@ export const ensureDemoData = mutation({
       widgets: [
         { id: "w1", type: "valueCard", title: "Temperatura actual", deviceId: sensorId, dataKey: "temperature", unit: "°C", color: "#0891b2", width: "1/3" },
         { id: "w2", type: "valueCard", title: "Humedad actual", deviceId: sensorId, dataKey: "humidity", unit: "%", color: "#0d9488", width: "1/3" },
-        { id: "w3", type: "valueCard", title: "Batería del sensor", deviceId: sensorId, dataKey: "battery", unit: "%", color: "#ca8a04", width: "1/3" },
+        { id: "w3", type: "battery", title: "Batería del sensor", deviceId: sensorId, dataKey: "battery", unit: "%", color: "#ca8a04", width: "1/3" },
         { id: "w4", type: "timeSeries", title: "Temperatura · últimas 24 h", deviceId: sensorId, dataKey: "temperature", unit: "°C", color: "#0891b2", width: "2/3" },
         { id: "w5", type: "gauge", title: "Humedad relativa", deviceId: sensorId, dataKey: "humidity", unit: "%", color: "#0d9488", width: "1/3" },
+        { id: "w6", type: "timeSeries", title: "Humedad · últimas 24 h", deviceId: sensorId, dataKey: "humidity", unit: "%", color: "#0d9488", width: "1" },
       ],
     });
 

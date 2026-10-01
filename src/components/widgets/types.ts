@@ -1,5 +1,5 @@
 /** Tipos compartidos del builder de widgets */
-export type WidgetType = "timeSeries" | "valueCard" | "gauge";
+export type WidgetType = "timeSeries" | "valueCard" | "gauge" | "battery" | "alarms";
 export type WidgetWidth = "1/3" | "1/2" | "2/3" | "1";
 
 export interface WidgetConfig {
@@ -24,6 +24,8 @@ export const WIDGET_TYPE_LABEL: Record<WidgetType, string> = {
   timeSeries: "Serie temporal",
   valueCard: "Valor actual",
   gauge: "Indicador",
+  battery: "Batería",
+  alarms: "Alarmas activas",
 };
 
 export const PALETTE = [

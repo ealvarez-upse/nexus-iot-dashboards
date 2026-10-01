@@ -4,7 +4,13 @@ import { mutation, query } from "./_generated/server";
 
 const widgetValidator = v.object({
   id: v.string(),
-  type: v.union(v.literal("timeSeries"), v.literal("valueCard"), v.literal("gauge")),
+  type: v.union(
+    v.literal("timeSeries"),
+    v.literal("valueCard"),
+    v.literal("gauge"),
+    v.literal("battery"),
+    v.literal("alarms"),
+  ),
   title: v.string(),
   deviceId: v.id("devices"),
   dataKey: v.string(),

@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/input-otp";
 
 import { useAuth } from "@/hooks/use-auth";
-import logo from "@/assets/logo.svg";
 import { ArrowRight, ArrowLeft, Loader2, Mail } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -100,15 +99,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                   <div className="flex justify-center">
                     <Link to="/" aria-label="Volver al inicio">
                       <img
-                        src={logo}
-                        alt="Nexus IoT"
-                        width={64}
-                        height={64}
-                        className="mb-4 mt-4 cursor-pointer rounded-lg"
+                        src="/imind-logo.png"
+                        alt="Imind IoT"
+                        className="mb-4 mt-4 h-10 w-auto cursor-pointer"
                       />
                     </Link>
                   </div>
-                  <CardTitle className="text-xl">Inicia sesión en Nexus IoT</CardTitle>
+                  <CardTitle className="text-xl">Inicia sesión en Imind IoT</CardTitle>
                   <CardDescription>
                     Ingresa tu correo para entrar o crear tu cuenta
                   </CardDescription>
@@ -239,7 +236,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                 to="/"
                 className="underline transition-colors hover:text-primary"
               >
-                Nexus IoT
+                Imind IoT
               </Link>
             </div>
           </Card>
