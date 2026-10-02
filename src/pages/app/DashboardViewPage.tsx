@@ -1,66 +1,67 @@
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardCanvas } from "@/components/dashboard/DashboardCanvas";
+import { WidgetLibrary } from "@/components/dashboard/WidgetLibrary";
+import { WidgetConfigDialog } from "@/components/dashboard/WidgetConfigDialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TelemetryWidget } from "@/components/widgets/TelemetryWidget";
-import {
-  WIDGET_TYPE_LABEL,
-  WIDGET_WIDTH_CLASS,
-  type WidgetConfig,
+  cloneModel,
+  createEmptyDashboard,
+  newId,
+  type ImindDashboard,
+  type WidgetPosition,
   type WidgetType,
-  type WidgetWidth,
-  PALETTE,
-} from "@/components/widgets/types";
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Minus, Pencil, Plus } from "lucide-react";
+} from "@/lib/dashboard/model";
+import { normalizeDashboardDoc } from "@/lib/dashboard/normalize";
+import { getWidgetDefinition } from "@/lib/dashboard/registry";
+import { findFreePosition } from "@/lib/dashboard/layout";
+import { ArrowLeft, Check, Pencil, X } from "lucide-react";
+import { useNavigate, useParams } from "react-router";
 
-function randomId() {
-  return `w${Math.random().toString(36).slice(2, 9)}`;
-}
-
+/**
+ * Dashboard Builder IMIND — Fase 1.
+ *  - Modo vista: widgets limpios.
+ *  - Modo edición: draft LOCAL (guardar/cancelar explícitos), canvas con
+ *    drag/resize, biblioteca y configuración por widget.
+ *  - Documentos legacy v1 se normalizan al vuelo (normalizeDashboardDoc).
+ */
 export default function DashboardViewPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const dashboard = useQuery(api.dashboards.get, { id: id as never });
+  const raw = useQuery(api.dashboards.get, { id: id as never });
   const devices = useQuery(api.devices.list);
-  const setWidgets = useMutation(api.dashboards.setWidgets);
+  const saveDashboard = useMutation(api.dashboards.save);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [editing, setEditing] = useState<WidgetConfig | null>(null);
-  const [draft, setDraft] = useState<WidgetConfig>({
-    id: "",
-    type: "timeSeries",
-    title: "",
-    deviceId: "",
-    dataKey: "temperature",
-    unit: "°C",
-    color: PALETTE[0],
-    width: "1/2",
-  });
+  const rawDashboard = useMemo(() => (raw ? normalizeDashboardDoc(raw) : undefined), [raw]);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<ImindDashboard | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [configId, setConfigId] = useState<string | null>(null);
+  const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (dashboard === undefined) {
-    return <div className="flex flex-col gap-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-72 rounded-xl" /></div>;
+  const model = editing && draft ? draft : rawDashboard;
+  const deviceOptions = (devices ?? []).map((d) => ({
+    _id: d._id as string,
+    name: d.name,
+    latest: d.latest as Record<string, unknown> | undefined,
+  }));
+
+  if (raw === undefined) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-72 rounded-xl" />
+      </div>
+    );
   }
-  if (dashboard === null) {
+  if (raw === null || !model) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
         <p className="text-lg font-semibold">Dashboard no encontrado</p>
@@ -71,240 +72,149 @@ export default function DashboardViewPage() {
     );
   }
 
-  const deviceList = devices ?? [];
-  const widgets = dashboard.widgets ?? [];
-
-  const openCreate = () => {
-    setEditing(null);
-    setDraft({
-      id: randomId(),
-      type: "timeSeries",
-      title: "",
-      deviceId: deviceList[0]?._id ?? "",
-      dataKey: "temperature",
-      unit: "°C",
-      color: PALETTE[0],
-      width: "1/2",
-    });
-    setEditOpen(true);
+  const enterEdit = () => {
+    setDraft(cloneModel(model));
+    setName(model.metadata.name);
+    setSelectedId(null);
+    setEditing(true);
   };
 
-  const openEdit = (w: WidgetConfig) => {
-    setEditing(w);
-    setDraft({ ...w });
-    setEditOpen(true);
+  const cancelEdit = () => {
+    setDraft(null);
+    setSelectedId(null);
+    setEditing(false);
   };
 
-  const saveWidget = async () => {
-    if (!draft.title.trim() || !draft.deviceId) return;
+  const saveEdit = async () => {
+    if (!draft) return;
     setSaving(true);
     try {
-      const next = (
-        editing
-          ? widgets.map((w) => (w.id === editing.id ? draft : w))
-          : [...widgets, draft]
-      ) as typeof widgets;
-      await setWidgets({ id: dashboard._id, widgets: next });
-      setEditOpen(false);
+      await saveDashboard({
+        id: id as never,
+        name: name.trim() || draft.metadata.name,
+        description: draft.metadata.description,
+        model: { ...draft, metadata: { ...draft.metadata, name: name.trim() || draft.metadata.name } },
+      });
+      toast.success("Dashboard guardado");
+      setDraft(null);
+      setEditing(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
     } finally {
       setSaving(false);
     }
   };
 
-  const removeWidget = async (wid: string) => {
-    await setWidgets({ id: dashboard._id, widgets: widgets.filter((w) => w.id !== wid) });
+  const addWidget = (type: WidgetType) => {
+    if (!draft) return;
+    const def = getWidgetDefinition(type);
+    const next = cloneModel(draft);
+    const pos = findFreePosition(next.widgets, def.defaultSize.w, def.defaultSize.h, next.settings.columns);
+    const widget = {
+      id: newId("w"),
+      type,
+      title: def.label,
+      position: pos,
+      datasourceIds: [],
+      actionIds: [],
+      configuration: { ...def.defaults },
+    };
+    next.widgets.push(widget);
+    setDraft(next);
+    setSelectedId(widget.id);
+    setConfigId(widget.id);
   };
 
-  const selectedDevice = deviceList.find((d) => d._id === draft.deviceId);
-  const deviceKeys = selectedDevice
-    ? Object.keys(selectedDevice.latest ?? {})
-    : ["temperature", "humidity"];
+  const duplicateWidget = (widgetId: string) => {
+    if (!draft) return;
+    const next = cloneModel(draft);
+    const w = next.widgets.find((x) => x.id === widgetId);
+    if (!w) return;
+    const copy = {
+      ...cloneModel(w),
+      id: newId("w"),
+      title: `${w.title} (copia)`,
+      position: findFreePosition(next.widgets, w.position.w, w.position.h, next.settings.columns),
+    };
+    next.widgets.push(copy);
+    setDraft(next);
+    setSelectedId(copy.id);
+  };
+
+  const removeWidget = (widgetId: string) => {
+    if (!draft) return;
+    const next = cloneModel(draft);
+    next.widgets = next.widgets.filter((w) => w.id !== widgetId);
+    setDraft(next);
+    if (selectedId === widgetId) setSelectedId(null);
+  };
+
+  const changePosition = (widgetId: string, position: WidgetPosition) => {
+    if (!draft) return;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const widgets = prev.widgets.map((w) => (w.id === widgetId ? { ...w, position } : w));
+      return { ...prev, widgets };
+    });
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/app/dashboards")} aria-label="Volver">
-              <ArrowLeft className="size-5" />
-            </Button>
-            <h1 className="text-2xl font-bold tracking-tight">{dashboard.name}</h1>
-          </div>
-          {dashboard.description ? (
-            <p className="ml-12 text-sm text-muted-foreground">{dashboard.description}</p>
-          ) : null}
-        </div>
-        <Button onClick={openCreate} disabled={deviceList.length === 0}>
-          <Plus className="mr-2 size-4" /> Agregar widget
-        </Button>
-      </div>
-
-      {deviceList.length === 0 ? (
-        <div className="card-layered rounded-xl border bg-card p-10 text-center">
-          <p className="font-medium">Primero registra un dispositivo</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Los widgets necesitan un dispositivo del cual leer telemetría.{" "}
-            <Link to="/app/dispositivos" className="text-primary underline underline-offset-4">
-              Ir a dispositivos
-            </Link>
-          </p>
-        </div>
-      ) : widgets.length === 0 ? (
-        <div className="card-layered rounded-xl border bg-card p-10 text-center">
-          <p className="font-medium">Dashboard vacío</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Agrega tu primer widget: serie temporal, valor actual o indicador.
-          </p>
-          <Button className="mt-4" onClick={openCreate}>
-            <Plus className="mr-2 size-4" /> Agregar widget
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/app/dashboards")} aria-label="Volver">
+            <ArrowLeft className="size-5" />
           </Button>
+          {editing ? (
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9 max-w-72 text-lg font-bold" />
+          ) : (
+            <h1 className="truncate text-2xl font-bold tracking-tight">{model.metadata.name}</h1>
+          )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-6">
-          {widgets.map((w) => (
-            <div key={w.id} className={WIDGET_WIDTH_CLASS[w.width]}>
-              <div className="group relative">
-                <div className="absolute -top-2 right-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
-                  <button
-                    className="rounded-md bg-background/90 p-1.5 shadow-sm ring-1 ring-border hover:bg-accent"
-                    onClick={() => openEdit(w)}
-                    aria-label="Editar widget"
-                  >
-                    <Pencil className="size-3.5" />
-                  </button>
-                  <button
-                    className="rounded-md bg-background/90 p-1.5 shadow-sm ring-1 ring-border hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => void removeWidget(w.id)}
-                    aria-label="Eliminar widget"
-                  >
-                    <Minus className="size-3.5" />
-                  </button>
-                </div>
-                <TelemetryWidget widget={w} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Dialogo crear/editar widget */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar widget" : "Nuevo widget"}</DialogTitle>
-            <DialogDescription>
-              Conecta una gráfica a la telemetría de cualquier dispositivo.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-2 flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label>Tipo</Label>
-                <Select
-                  value={draft.type}
-                  onValueChange={(v) => setDraft({ ...draft, type: v as WidgetType })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(WIDGET_TYPE_LABEL).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Ancho</Label>
-                <Select
-                  value={draft.width}
-                  onValueChange={(v) => setDraft({ ...draft, width: v as WidgetWidth })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1/3">Tercio (1/3)</SelectItem>
-                    <SelectItem value="1/2">Mitad (1/2)</SelectItem>
-                    <SelectItem value="2/3">Dos tercios (2/3)</SelectItem>
-                    <SelectItem value="1">Ancho completo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Título</Label>
-              <Input
-                value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="Ej. Temperatura · Cuarto frío 1"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label>Dispositivo</Label>
-                <Select
-                  value={draft.deviceId}
-                  onValueChange={(v) => setDraft({ ...draft, deviceId: v })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Elegir…" /></SelectTrigger>
-                  <SelectContent>
-                    {deviceList.map((d) => (
-                      <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Clave de datos</Label>
-                <Select
-                  value={draft.dataKey}
-                  onValueChange={(v) => setDraft({ ...draft, dataKey: v })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Elegir…" /></SelectTrigger>
-                  <SelectContent>
-                    {(deviceKeys.length > 0 ? deviceKeys : ["temperature", "humidity"]).map((k) => (
-                      <SelectItem key={k} value={k}>{k}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label>Unidad</Label>
-                <Input
-                  value={draft.unit ?? ""}
-                  onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
-                  placeholder="°C, %, …"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Color</Label>
-                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                  {PALETTE.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setDraft({ ...draft, color: c })}
-                      className={`size-6 rounded-full ring-offset-2 transition ${
-                        draft.color === c ? "ring-2 ring-ring" : ""
-                      }`}
-                      style={{ backgroundColor: c }}
-                      aria-label={`Color ${c}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
-            <Button onClick={saveWidget} disabled={saving || !draft.title.trim() || !draft.deviceId}>
-              {saving ? "Guardando…" : editing ? "Guardar cambios" : "Agregar widget"}
+        {editing ? (
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground sm:inline">Modo edición · cambios locales</span>
+            <Button variant="outline" onClick={cancelEdit}>
+              <X className="mr-1 size-4" /> Cancelar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button onClick={() => void saveEdit()} disabled={saving}>
+              <Check className="mr-1 size-4" /> {saving ? "Guardando…" : "Guardar"}
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={enterEdit}>
+            <Pencil className="mr-2 size-4" /> Editar dashboard
+          </Button>
+        )}
+      </div>
+      {model.metadata.description && !editing ? (
+        <p className="-mt-2 text-sm text-muted-foreground">{model.metadata.description}</p>
+      ) : null}
+
+      <DashboardCanvas
+        widgets={model.widgets}
+        settings={model.settings}
+        datasources={model.datasources}
+        actions={model.actions}
+        editMode={editing}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onPositionChange={changePosition}
+        onConfigure={(wid) => setConfigId(wid)}
+        onDuplicate={duplicateWidget}
+        onRemove={removeWidget}
+        onAddWidget={() => setLibraryOpen(true)}
+      />
+
+      <WidgetLibrary open={libraryOpen} onOpenChange={setLibraryOpen} onPick={addWidget} />
+      <WidgetConfigDialog
+        open={configId !== null && editing}
+        onOpenChange={(o) => !o && setConfigId(null)}
+        dashboard={draft ?? model}
+        widgetId={configId}
+        devices={deviceOptions}
+        onChange={(next) => setDraft(next)}
+      />
     </div>
   );
 }

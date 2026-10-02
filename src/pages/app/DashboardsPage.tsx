@@ -135,7 +135,7 @@ export default function DashboardsPage() {
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
-                    {d.widgets.length} widget{d.widgets.length === 1 ? "" : "s"}
+                    {(d.widgets?.length ?? 0)} widget{(d.widgets?.length ?? 0) === 1 ? "" : "s"}
                   </span>
                   <span className="text-xs font-medium text-primary opacity-0 transition group-hover:opacity-100">
                     Abrir →

@@ -97,33 +97,13 @@ const schema = defineSchema(
       .index("by_device", ["deviceId"])
       .index("by_open", ["open"]),
 
-    // Dashboards con layout y widgets persistentes
+    // Dashboards: documento IMIND v2 en `model` (serializable, fuente de
+    // verdad del builder). `widgets` se conserva solo para docs legacy v1.
     dashboards: defineTable({
       name: v.string(),
       description: v.optional(v.string()),
-      widgets: v.array(
-        v.object({
-          id: v.string(),
-          type: v.union(
-            v.literal("timeSeries"),
-            v.literal("valueCard"),
-            v.literal("gauge"),
-            v.literal("battery"),
-            v.literal("alarms"),
-          ),
-          title: v.string(),
-          deviceId: v.id("devices"),
-          dataKey: v.string(),
-          unit: v.optional(v.string()),
-          color: v.optional(v.string()),
-          width: v.union(
-            v.literal("1/3"),
-            v.literal("1/2"),
-            v.literal("2/3"),
-            v.literal("1"),
-          ),
-        }),
-      ),
+      model: v.optional(v.any()),
+      widgets: v.optional(v.array(v.any())),
       createdBy: v.optional(v.id("users")),
     }),
 
