@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardCanvas } from "@/components/dashboard/DashboardCanvas";
 import { WidgetLibrary } from "@/components/dashboard/WidgetLibrary";
 import { WidgetConfigDialog } from "@/components/dashboard/WidgetConfigDialog";
+import { HtmlCardConfigDialog } from "@/components/dashboard/HtmlCardConfigDialog";
 import {
   cloneModel,
   newId,
@@ -194,14 +195,28 @@ export default function DashboardViewPage() {
       />
 
       <WidgetLibrary open={libraryOpen} onOpenChange={setLibraryOpen} onPick={addWidget} />
-      <WidgetConfigDialog
-        open={configId !== null && editing}
-        onOpenChange={(o) => !o && setConfigId(null)}
-        dashboard={draft ?? model}
-        widgetId={configId}
-        devices={deviceOptions}
-        onChange={(next) => setDraft(next)}
-      />
+      {/* El HTML Card usa su editor dedicado; el resto, el diálogo genérico.
+          El enrutado vive aquí (no dentro del diálogo) para no romper las
+          reglas de hooks de React. */}
+      {(draft ?? model).widgets.find((w) => w.id === configId)?.type === "html_card" ? (
+        <HtmlCardConfigDialog
+          open={configId !== null && editing}
+          onOpenChange={(o) => !o && setConfigId(null)}
+          dashboard={draft ?? model}
+          widgetId={configId}
+          devices={deviceOptions}
+          onChange={(next) => setDraft(next)}
+        />
+      ) : (
+        <WidgetConfigDialog
+          open={configId !== null && editing}
+          onOpenChange={(o) => !o && setConfigId(null)}
+          dashboard={draft ?? model}
+          widgetId={configId}
+          devices={deviceOptions}
+          onChange={(next) => setDraft(next)}
+        />
+      )}
     </div>
   );
 }

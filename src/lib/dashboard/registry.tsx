@@ -47,6 +47,13 @@ import { SwitchRenderer } from "@/components/widgets/renderers/switch";
 import { DataTableRenderer } from "@/components/widgets/renderers/data_table";
 import { HtmlCardRenderer } from "@/components/widgets/renderers/html_card";
 import { LegacyAlarmsRenderer } from "@/components/widgets/renderers/alarms";
+import {
+  HTML_CARD_DEFAULT_CSS,
+  HTML_CARD_DEFAULT_HTML,
+  HTML_CARD_DEFAULT_JS,
+  HTML_CARD_FORMAT_VERSION,
+} from "./htmlcard/defaults";
+import type { AllowedAction } from "./htmlcard/protocol";
 
 export const PALETTE = [
   "#0891b2", "#0d9488", "#ca8a04", "#dc2626", "#7c3aed", "#2563eb", "#16a34a",
@@ -331,29 +338,22 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
   html_card: definition({
     type: "html_card",
     label: "HTML Card",
-    description: "HTML/CSS en iframe aislado (JS en Fase 2).",
+    description:
+      "Widget personalizado HTML/CSS/JS en iframe aislado con API IMIND (telemetría y acciones).",
     category: "avanzado",
     icon: Code2,
     defaultSize: { w: 6, h: 3 },
     minSize: { w: 3, h: 2 },
+    // El editor dedicado (HtmlCardConfigDialog) gestiona código, datasource
+    // y acciones; el formulario genérico no lo abre.
     dataKeys: "none",
-    configSchema: [
-      { key: "html", label: "HTML", type: "textarea", group: "general", rows: 6, placeholder: "<div class=\"card\">4.01 °C</div>" },
-      { key: "css", label: "CSS", type: "textarea", group: "advanced", rows: 6, placeholder: ".card{font-size:28px}" },
-      {
-        key: "javascript",
-        label: "JavaScript",
-        type: "textarea",
-        group: "advanced",
-        rows: 4,
-        help: "Se guarda pero es inerte: en Fase 2 se ejecutará dentro del iframe sandbox con un contexto de datos restringido.",
-      },
-      COLOR_FIELD,
-    ],
+    configSchema: [SHOW_TITLE_FIELD, COLOR_FIELD],
     defaults: {
-      html: "<div class=\"saludo\">Hola IMIND</div>",
-      css: ".saludo{font-size:22px;font-weight:600;color:#0891b2;}",
-      javascript: "",
+      html: HTML_CARD_DEFAULT_HTML,
+      css: HTML_CARD_DEFAULT_CSS,
+      javascript: HTML_CARD_DEFAULT_JS,
+      allowedActions: [] as AllowedAction[],
+      formatVersion: HTML_CARD_FORMAT_VERSION,
       color: PALETTE[4],
     },
     Renderer: HtmlCardRenderer,

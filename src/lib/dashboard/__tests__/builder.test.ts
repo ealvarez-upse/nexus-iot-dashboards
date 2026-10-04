@@ -404,13 +404,19 @@ describe("guard-rails de arquitectura", () => {
     expect(src("src/lib/dashboard/datasource.ts").includes("api.alarms.list")).toBe(true);
   });
 
-  it("HTML Card: iframe sandbox SIN allow-scripts (JS inerte)", () => {
+  it("HTML Card: iframe sandbox EXACTAMENTE allow-scripts (Fase 2)", () => {
     const content = src("src/components/widgets/renderers/html_card.tsx");
-    expect(content.includes('sandbox=""')).toBe(true);
-    // el atributo sandbox no debe declarar allow-scripts (los comentarios del
-    // código sí pueden mencionar la palabra: se valida el atributo, no el texto)
-    expect(/sandbox="[^"]*allow/.test(content)).toBe(false);
-    expect(content.includes("srcDoc")).toBe(true);
+    // Fase 2: el JS del usuario se ejecuta en el sandbox → allow-scripts es
+    // obligatorio, pero el atributo debe ser EXACTO: sin allow-same-origin
+    // (origen opaco), sin top-navigation, popups, forms ni modals.
+    expect(content.includes('sandbox={SANDBOX_ATTR}')).toBe(true);
+    const srcdoc = src("src/lib/dashboard/htmlcard/srcdoc.ts");
+    expect(srcdoc.includes('SANDBOX_ATTR = "allow-scripts"')).toBe(true);
+    // el srcDoc del renderer y del editor viene SIEMPRE de buildSandboxDoc
+    expect(content.includes("buildSandboxDoc(")).toBe(true);
+    expect(src("src/components/dashboard/HtmlCardConfigDialog.tsx").includes("buildSandboxDoc(")).toBe(true);
+    // el código del usuario nunca se inyecta en el DOM principal
+    expect(content.includes("dangerouslySetInnerHTML")).toBe(false);
   });
 
   it("el backend exige sesión en las lecturas del dashboard builder", () => {
