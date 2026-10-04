@@ -11,16 +11,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { describeTargetLabel, useActionExecutor } from "@/lib/dashboard/actions";
+import { describeTargetLabel } from "@/lib/dashboard/actions";
 import type { Action } from "@/lib/dashboard/model";
 import { cn } from "@/lib/utils";
 import {
   WidgetCard,
   WidgetHeader,
-  cfgBool,
-  cfgString,
 } from "./shared";
-import { iconByName, useWidgetAction } from "./button";
+import { cfgBool, cfgString, iconByName } from "./widget-utils";
+import { useWidgetAction } from "./use-widget-action";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /**

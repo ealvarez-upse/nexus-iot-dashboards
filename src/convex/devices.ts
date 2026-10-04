@@ -52,11 +52,22 @@ function evaluateThresholds(
   return null;
 }
 
-/** Lista todos los dispositivos con su último estado por clave y alarmas abiertas. */
+/**
+ * Lista dispositivos con su último estado por clave y alarmas abiertas.
+ * Lectura autenticada; el admin ve todos, el resto solo los suyos
+ * (incluye los demo/plataforma sin creador).
+ */
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const devices = await ctx.db.query("devices").order("desc").collect();
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const all = await ctx.db.query("devices").order("desc").collect();
+    const devices =
+      user?.role === "admin"
+        ? all
+        : all.filter((d) => d.createdBy === undefined || d.createdBy === userId);
     const result = [];
     for (const device of devices) {
       const latest = await ctx.db
@@ -79,11 +90,26 @@ export const list = query({
   },
 });
 
-/** Detalle de un dispositivo. */
+/**
+ * Detalle de un dispositivo: sesión + propietario
+ * (los demo/plataforma sin creador son visibles para cualquier usuario).
+ */
 export const get = query({
   args: { id: v.id("devices") },
   handler: async (ctx, { id }) => {
-    return await ctx.db.get(id);
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const device = await ctx.db.get(id);
+    if (!device) return null;
+    if (
+      device.createdBy !== undefined &&
+      device.createdBy !== userId &&
+      user?.role !== "admin"
+    ) {
+    throw new Error("Sin permisos para ver este dispositivo");
+    }
+    return device;
   },
 });
 
@@ -181,7 +207,10 @@ export const setThresholds = mutation({
   },
 });
 
-/** Últimas N lecturas por clave para gráficas en vivo. */
+/**
+ * Últimas N lecturas por clave para gráficas en vivo.
+ * Es el acceso a datos de useWidgetData: sesión + propietario (o admin).
+ */
 export const latestSeries = query({
   args: {
     deviceId: v.id("devices"),
@@ -189,6 +218,18 @@ export const latestSeries = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { deviceId, keys, limit }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const device = await ctx.db.get(deviceId);
+    if (!device) throw new Error("Dispositivo destino no encontrado");
+    if (
+      device.createdBy !== undefined &&
+      device.createdBy !== userId &&
+      user?.role !== "admin"
+    ) {
+      throw new Error("Sin permisos para leer este dispositivo");
+    }
     const max = limit ?? 240;
     const series: Record<string, { ts: number; value: number }[]> = {};
     for (const key of keys) {
@@ -205,10 +246,22 @@ export const latestSeries = query({
   },
 });
 
-/** Claves de telemetría distintas que ha emitido un dispositivo. */
+/** Claves de telemetría distintas de un dispositivo (sesión + propietario). */
 export const knownKeys = query({
   args: { deviceId: v.id("devices") },
   handler: async (ctx, { deviceId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const device = await ctx.db.get(deviceId);
+    if (!device) return [];
+    if (
+      device.createdBy !== undefined &&
+      device.createdBy !== userId &&
+      user?.role !== "admin"
+    ) {
+      throw new Error("Sin permisos para leer este dispositivo");
+    }
     const rows = await ctx.db
       .query("telemetry")
       .withIndex("by_device_ts", (q) => q.eq("deviceId", deviceId))

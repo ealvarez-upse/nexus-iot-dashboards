@@ -1,8 +1,6 @@
 import { cn } from "@/lib/utils";
+import { WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
 import {
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
   cfgBool,
   cfgNumber,
   cfgOptionalNumber,
@@ -10,7 +8,7 @@ import {
   firstSeries,
   formatValue,
   keyIconFor,
-} from "./shared";
+} from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 type Status = "ok" | "warn" | "crit";

@@ -4,16 +4,14 @@ import {
   RadialBarChart,
   ResponsiveContainer,
 } from "recharts";
+import { WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
 import {
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
   cfgNumber,
   cfgString,
   firstSeries,
   formatValue,
   keyIconFor,
-} from "./shared";
+} from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /** Gauge: medidor radial con rango min–max configurable. */

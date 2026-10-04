@@ -1,7 +1,8 @@
 import { BellOff, BellRing } from "lucide-react";
 import { timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { WidgetCard, WidgetHeader, cfgStringSafe } from "./shared";
+import { WidgetCard, WidgetHeader } from "./shared";
+import { cfgStringSafe } from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /**

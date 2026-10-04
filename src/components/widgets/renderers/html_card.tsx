@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
-import { WidgetCard, WidgetHeader, cfgString, cfgStringSafe } from "./shared";
+import { WidgetCard, WidgetHeader } from "./shared";
+import { cfgString, cfgStringSafe } from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /**

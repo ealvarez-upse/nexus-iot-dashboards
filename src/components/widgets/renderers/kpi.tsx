@@ -1,16 +1,14 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
 import {
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
   cfgBool,
   cfgNumber,
   cfgString,
   firstSeries,
   formatValue,
   keyIconFor,
-} from "./shared";
+} from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 function aggregate(
@@ -48,11 +46,14 @@ export function KpiRenderer({ widget, config, data }: WidgetRendererProps) {
   const color = cfgString(config, "color", "#0891b2");
   const Icon = keyIconFor(key);
 
-  const now = Date.now();
+  // Ventanas derivadas de los datos (no de Date.now): "ahora" = último
+  // timestamp observado; la ventana previa es el mismo largo inmediatamente
+  // antes. Estable entre renders y refleja la ventana del batch de datos.
+  const lastTs = points.length > 0 ? points[points.length - 1].ts : 0;
   const windowMs = windowMin * 60_000;
-  const current = points.filter((p) => p.ts >= now - windowMs);
+  const current = points.filter((p) => p.ts >= lastTs - windowMs);
   const previous = points.filter(
-    (p) => p.ts >= now - windowMs * 2 && p.ts < now - windowMs,
+    (p) => p.ts >= lastTs - windowMs * 2 && p.ts < lastTs - windowMs,
   );
 
   const value = aggregate(current.map((p) => p.value), agg);

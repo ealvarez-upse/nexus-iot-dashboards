@@ -25,7 +25,6 @@ import {
   ToggleLeft,
   TrendingUp,
   Zap,
-  type LucideIcon,
 } from "lucide-react";
 import type { WidgetType } from "./model";
 import { newId } from "./model";
@@ -41,7 +40,9 @@ import { KpiRenderer } from "@/components/widgets/renderers/kpi";
 import { LineChartRenderer } from "@/components/widgets/renderers/line_chart";
 import { AreaChartRenderer } from "@/components/widgets/renderers/area_chart";
 import { GaugeRenderer } from "@/components/widgets/renderers/gauge";
-import { BUTTON_ICONS, ButtonRenderer } from "@/components/widgets/renderers/button";
+import { BUTTON_ICONS } from "@/components/widgets/renderers/widget-utils";
+import { ButtonRenderer } from "@/components/widgets/renderers/button";
+import { UnknownRenderer } from "@/components/widgets/renderers/unknown";
 import { SwitchRenderer } from "@/components/widgets/renderers/switch";
 import { DataTableRenderer } from "@/components/widgets/renderers/data_table";
 import { HtmlCardRenderer } from "@/components/widgets/renderers/html_card";
@@ -389,19 +390,8 @@ export function getWidgetDefinition(type: string): WidgetDefinition {
     dataKeys: "none",
     configSchema: [],
     defaults: {},
-    Renderer: UnknownRenderer,
+    Renderer: UnknownRenderer as unknown as WidgetDefinition["Renderer"],
   };
-}
-
-function UnknownRenderer({ widget }: { widget: { title: string } }) {
-  return (
-    <div className="glass flex h-full flex-col items-center justify-center rounded-xl p-4 text-center">
-      <p className="text-sm font-semibold">{widget.title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Este tipo de widget no está registrado en esta versión.
-      </p>
-    </div>
-  );
 }
 
 /** ¿Debe aparecer el tipo en la biblioteca de "Agregar widget"? */

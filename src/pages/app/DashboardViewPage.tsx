@@ -10,7 +10,6 @@ import { WidgetLibrary } from "@/components/dashboard/WidgetLibrary";
 import { WidgetConfigDialog } from "@/components/dashboard/WidgetConfigDialog";
 import {
   cloneModel,
-  createEmptyDashboard,
   newId,
   type ImindDashboard,
   type WidgetPosition,
@@ -19,6 +18,7 @@ import {
 import { normalizeDashboardDoc } from "@/lib/dashboard/normalize";
 import { getWidgetDefinition } from "@/lib/dashboard/registry";
 import { findFreePosition } from "@/lib/dashboard/layout";
+import { duplicateWidget, removeWidget } from "@/lib/dashboard/ops";
 import { ArrowLeft, Check, Pencil, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 
@@ -125,30 +125,6 @@ export default function DashboardViewPage() {
     setConfigId(widget.id);
   };
 
-  const duplicateWidget = (widgetId: string) => {
-    if (!draft) return;
-    const next = cloneModel(draft);
-    const w = next.widgets.find((x) => x.id === widgetId);
-    if (!w) return;
-    const copy = {
-      ...cloneModel(w),
-      id: newId("w"),
-      title: `${w.title} (copia)`,
-      position: findFreePosition(next.widgets, w.position.w, w.position.h, next.settings.columns),
-    };
-    next.widgets.push(copy);
-    setDraft(next);
-    setSelectedId(copy.id);
-  };
-
-  const removeWidget = (widgetId: string) => {
-    if (!draft) return;
-    const next = cloneModel(draft);
-    next.widgets = next.widgets.filter((w) => w.id !== widgetId);
-    setDraft(next);
-    if (selectedId === widgetId) setSelectedId(null);
-  };
-
   const changePosition = (widgetId: string, position: WidgetPosition) => {
     if (!draft) return;
     setDraft((prev) => {
@@ -201,8 +177,19 @@ export default function DashboardViewPage() {
         onSelect={setSelectedId}
         onPositionChange={changePosition}
         onConfigure={(wid) => setConfigId(wid)}
-        onDuplicate={duplicateWidget}
-        onRemove={removeWidget}
+        onDuplicate={(wid) => {
+          if (!draft) return;
+          const res = duplicateWidget(draft, wid);
+          if (res.newWidgetId) {
+            setDraft(res.model);
+            setSelectedId(res.newWidgetId);
+          }
+        }}
+        onRemove={(wid) => {
+          if (!draft) return;
+          setDraft(removeWidget(draft, wid));
+          if (selectedId === wid) setSelectedId(null);
+        }}
         onAddWidget={() => setLibraryOpen(true)}
       />
 

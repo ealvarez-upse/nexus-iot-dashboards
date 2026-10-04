@@ -22,17 +22,35 @@ async function requireEditAccess(ctx: MutationCtx, id: Id<"dashboards">) {
   return { doc, userId, isAdmin };
 }
 
+/** Lecturas: requieren sesión (no hay flujo público de dashboards). */
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("dashboards").order("desc").collect();
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const all = await ctx.db.query("dashboards").order("desc").collect();
+    if (user?.role !== "admin") {
+      return all.filter((d) => d.createdBy === userId);
+    }
+    return all;
   },
 });
 
+/** Lectura individual: sesión + propietario (o admin). */
 export const get = query({
   args: { id: v.id("dashboards") },
   handler: async (ctx, { id }) => {
-    return await ctx.db.get(id);
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const doc = await ctx.db.get(id);
+    if (!doc) return null;
+    const isOwner = doc.createdBy !== undefined && doc.createdBy === userId;
+    if (!isOwner && user?.role !== "admin") {
+      throw new Error("Sin permisos para ver este dashboard");
+    }
+    return doc;
   },
 });
 

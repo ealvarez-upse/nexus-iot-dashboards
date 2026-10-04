@@ -1,6 +1,28 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+
+/**
+ * Reglas de acceso de alarmas: el backend NO se fía del frontend.
+ *  - Lectura y escritura requieren sesión activa.
+ *  - Un usuario solo ve/actúa sobre alarmas de dispositivos propios
+ *    (o demo/plataforma sin creador); el admin ve todo.
+ */
+export async function requireDeviceRead(
+  ctx: { db: unknown },
+  userId: Id<"users">,
+  deviceId: Id<"devices">,
+): Promise<boolean> {
+  const db = ctx.db as {
+    get: (id: Id<"users"> | Id<"devices">) => Promise<unknown>;
+  };
+  const user = (await db.get(userId)) as { role?: string } | null;
+  if (user?.role === "admin") return true;
+  const device = (await db.get(deviceId)) as { createdBy?: Id<"users"> } | null;
+  if (!device) return false;
+  return device.createdBy === undefined || device.createdBy === userId;
+}
 
 /** Lista alarmas (más recientes primero), opcionalmente filtradas. */
 export const list = query({
@@ -12,6 +34,16 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { deviceId, status, limit }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("No autenticado");
+    const user = await ctx.db.get(userId);
+    const devices = await ctx.db.query("devices").collect();
+    const allowed = new Set<string>();
+    for (const d of devices) {
+      if (user?.role === "admin" || d.createdBy === undefined || d.createdBy === userId) {
+        allowed.add(d._id);
+      }
+    }
     const max = limit ?? 100;
     const alarms = await ctx.db.query("alarms").withIndex("by_ts").order("desc").take(400);
     return alarms
@@ -21,6 +53,7 @@ export const list = query({
         if (status === "cleared" && a.open) return false;
         return true;
       })
+      .filter((a) => allowed.has(a.deviceId))
       .slice(0, max);
   },
 });
@@ -29,11 +62,20 @@ export const list = query({
 export const activeCount = query({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return 0;
+    const user = await ctx.db.get(userId);
     const rows = await ctx.db
       .query("alarms")
       .withIndex("by_open", (q) => q.eq("open", true))
       .collect();
-    return rows.length;
+    if (user?.role === "admin") return rows.length;
+    const devices = await ctx.db.query("devices").collect();
+    const allowed = new Set<string>();
+    for (const d of devices) {
+      if (d.createdBy === undefined || d.createdBy === userId) allowed.add(d._id);
+    }
+    return rows.filter((a) => allowed.has(a.deviceId)).length;
   },
 });
 
@@ -45,6 +87,9 @@ export const ack = mutation({
     if (userId === null) throw new Error("No autenticado");
     const alarm = await ctx.db.get(id);
     if (!alarm) throw new Error("Alarma no encontrada");
+    if (!(await requireDeviceRead(ctx, userId, alarm.deviceId))) {
+      throw new Error("Sin permisos sobre esta alarma");
+    }
     await ctx.db.patch(id, {
       status: alarm.open ? "active_ack" : "cleared_ack",
       ackTs: Date.now(),
@@ -61,6 +106,9 @@ export const clear = mutation({
     if (userId === null) throw new Error("No autenticado");
     const alarm = await ctx.db.get(id);
     if (!alarm) throw new Error("Alarma no encontrada");
+    if (!(await requireDeviceRead(ctx, userId, alarm.deviceId))) {
+      throw new Error("Sin permisos sobre esta alarma");
+    }
     if (!alarm.open) return;
     await ctx.db.patch(id, {
       open: false,
@@ -84,6 +132,9 @@ export const ackAllForDevice = mutation({
   handler: async (ctx, { deviceId }) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("No autenticado");
+    if (!(await requireDeviceRead(ctx, userId, deviceId))) {
+      throw new Error("Sin permisos sobre este dispositivo");
+    }
     const open = await ctx.db
       .query("alarms")
       .withIndex("by_device", (q) => q.eq("deviceId", deviceId))

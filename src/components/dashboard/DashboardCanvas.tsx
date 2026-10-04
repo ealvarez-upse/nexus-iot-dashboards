@@ -71,7 +71,8 @@ export function DashboardCanvas({
 }: DashboardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [dragActive, setDragActive] = useState(false);
+  /** Id del widget en drag (estado puro: nada de refs leídas durante el render). */
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const dragRef = useRef<DragState | null>(null);
 
   const metrics = useMemo(
@@ -123,13 +124,13 @@ export function DashboardCanvas({
       minW: def.minSize.w,
       minH: def.minSize.h,
     };
-    setDragActive(true);
+    setDraggingId(id);
     onSelect(id);
   }
 
   // Listeners globales mientras dura el drag
   useEffect(() => {
-    if (!dragActive) return;
+    if (draggingId === null) return;
 
     function applyPosition(next: WidgetPosition, current: WidgetPosition) {
       if (
@@ -160,7 +161,7 @@ export function DashboardCanvas({
 
     function onPointerUp() {
       dragRef.current = null;
-      setDragActive(false);
+      setDraggingId(null);
     }
 
     window.addEventListener("pointermove", onPointerMove);
@@ -171,7 +172,7 @@ export function DashboardCanvas({
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
     };
-  }, [dragActive]);
+  }, [draggingId]);
 
   const heightPx = canvasHeight(widgets, metrics);
   const addTile = editMode
@@ -223,7 +224,7 @@ export function DashboardCanvas({
       {widgets.map((widget) => {
         const def = getWidgetDefinition(widget.type);
         const ds = datasources.find((d) => d.id === widget.datasourceIds[0]);
-        const dragging = dragRef.current?.id === widget.id;
+        const dragging = draggingId === widget.id;
         return (
           <WidgetFrame
             key={widget.id}
@@ -275,7 +276,7 @@ export function DashboardCanvas({
       ) : null}
 
       {/* Velo que evita que iframes/gráficas roben el puntero durante el drag */}
-      {dragActive ? (
+      {draggingId !== null ? (
         <div
           className="fixed inset-0 z-40 cursor-grabbing"
           style={{ touchAction: "none" }}

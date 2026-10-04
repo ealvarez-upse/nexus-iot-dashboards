@@ -9,14 +9,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  ChartTooltip,
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
-  cfgNumber,
-  cfgString,
-} from "./shared";
+import { ChartTooltip, WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
+import { cfgNumber, cfgString } from "./widget-utils";
+import { windowedSeries } from "@/lib/dashboard/seriesWindow";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 function tickTime(ts: number): string {
@@ -28,10 +23,11 @@ export function AreaChartRenderer({ widget, config, data }: WidgetRendererProps)
   const windowMin = cfgNumber(config, "windowMinutes", 1440);
   const color = cfgString(config, "color", "#0891b2");
   const unit = cfgString(config, "unit", "");
-  const cutoff = Date.now() - windowMin * 60_000;
 
-  const key = Object.keys(data.series)[0] ?? "";
-  const rows = (data.series[key] ?? []).filter((p) => p.ts >= cutoff);
+  // Ventana derivada de los datos (no de Date.now): estable entre renders.
+  const allKeys = Object.keys(data.series);
+  const key = allKeys[0] ?? "";
+  const rows = windowedSeries(data.series[key], windowMin);
   const loading = data.loading && rows.length === 0;
   const thresholds = data.device?.thresholds?.[key];
 

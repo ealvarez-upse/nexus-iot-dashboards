@@ -9,16 +9,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  ChartTooltip,
-  PALETTE,
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
-  cfgBool,
-  cfgNumber,
-  cfgString,
-} from "./shared";
+import { ChartTooltip, WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
+import { PALETTE, cfgBool, cfgNumber, cfgString } from "./widget-utils";
+import { windowedSeries } from "@/lib/dashboard/seriesWindow";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 function tickTime(ts: number): string {
@@ -31,19 +24,18 @@ export function LineChartRenderer({ widget, config, data }: WidgetRendererProps)
   const showLegend = cfgBool(config, "showLegend", false);
   const color = cfgString(config, "color", "#0891b2");
   const unit = cfgString(config, "unit", "");
-  const cutoff = Date.now() - windowMin * 60_000;
 
+  // Ventana derivada de los datos (no de Date.now): estable entre renders.
   const activeKeys = Object.keys(data.series).filter(
-    (k) => (data.series[k] ?? []).some((p) => p.ts >= cutoff),
+    (k) => windowedSeries(data.series[k], windowMin).length > 0,
   );
   const keys = activeKeys.length > 0 ? activeKeys : Object.keys(data.series).slice(0, 3);
   const loading = data.loading && keys.length === 0;
 
-  // Puntos fusionados por timestamp para soportar multi-clave
+  // Puntos fusionados por timestamp dentro de la ventana
   const byTs = new Map<number, Record<string, number>>();
   for (const key of keys) {
-    for (const p of data.series[key] ?? []) {
-      if (p.ts < cutoff) continue;
+    for (const p of windowedSeries(data.series[key], windowMin)) {
       const row = byTs.get(p.ts) ?? { ts: p.ts };
       row[key] = p.value;
       byTs.set(p.ts, row);

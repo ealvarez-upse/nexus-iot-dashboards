@@ -1,15 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { timeAgo } from "@/lib/format";
+import { WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
 import {
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
   cfgNumber,
   cfgStringSafe,
   formatValue,
   keyIconFor,
   suggestUnit,
-} from "./shared";
+} from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /** Data Table: una fila por clave del datasource con su último valor. */

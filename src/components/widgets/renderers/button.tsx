@@ -1,21 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  DoorOpen,
-  Droplets,
-  Fan,
-  Flame,
-  Lightbulb,
-  Play,
-  Power,
-  Snowflake,
-  Square,
-  Thermometer,
-  ToggleLeft,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -25,63 +10,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { describeTargetLabel, useActionExecutor } from "@/lib/dashboard/actions";
-import type { Action } from "@/lib/dashboard/model";
 import {
-  cfgBool,
-  cfgString,
   WidgetCard,
   WidgetLoading,
 } from "./shared";
+import { cfgBool, cfgString, iconByName } from "./widget-utils";
+import { useWidgetAction } from "./use-widget-action";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
-
-/** Catálogo de iconos ofrecidos para Button/Switch (nombre → icono). */
-export const BUTTON_ICONS: { value: string; label: string; icon: LucideIcon }[] = [
-  { value: "power", label: "Encendido", icon: Power },
-  { value: "play", label: "Iniciar", icon: Play },
-  { value: "square", label: "Detener", icon: Square },
-  { value: "fan", label: "Ventilador", icon: Fan },
-  { value: "snowflake", label: "Frío", icon: Snowflake },
-  { value: "flame", label: "Calor", icon: Flame },
-  { value: "lightbulb", label: "Luz", icon: Lightbulb },
-  { value: "door", label: "Puerta", icon: DoorOpen },
-  { value: "droplets", label: "Humedad", icon: Droplets },
-  { value: "thermometer", label: "Temperatura", icon: Thermometer },
-  { value: "toggle", label: "Interruptor", icon: ToggleLeft },
-  { value: "zap", label: "Energía", icon: Zap },
-];
-
-export function iconByName(name: string, fallback: LucideIcon = Power): LucideIcon {
-  return BUTTON_ICONS.find((i) => i.value === name)?.icon ?? fallback;
-}
-
-/** Ejecuta una acción del documento con confirmación opcional y toasts. */
-export function useWidgetAction() {
-  const execute = useActionExecutor();
-  const [pending, setPending] = useState(false);
-
-  const run = async (action: Action | undefined, deviceName?: string) => {
-    if (!action) {
-      toast.error("Configura una acción para este widget");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await execute(action);
-      if (res.ok) {
-        toast.success("Comando enviado", {
-          description: `${describeTargetLabel(action, deviceName)} → ${JSON.stringify(action.payload ?? {})}`,
-        });
-      } else {
-        toast.error(res.message);
-      }
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return { run, pending };
-}
 
 /** Button: widget de control real (texto, icono, acción, confirmación). */
 export function ButtonRenderer({ widget, config, data, actionsById }: WidgetRendererProps) {

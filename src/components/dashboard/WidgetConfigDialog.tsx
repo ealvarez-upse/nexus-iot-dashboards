@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,26 +74,41 @@ export function WidgetConfigDialog({
   const [refresh, setRefresh] = useState("");
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [slotActions, setSlotActions] = useState<Record<string, string>>({});
+  const [lastFormKey, setLastFormKey] = useState<string | null>(null);
+  // (lastFormKey guarda la última clave aplicada del formulario)
 
-  // Carga el formulario SOLO al abrir o cambiar de widget. El dashboard NO va
-  // en las deps para no resetear el formulario con cada cambio del draft.
-  useEffect(() => {
-    if (!open || !widget || !def) return;
-    setTitle(widget.title);
-    const ds = widget.datasourceIds[0]
-      ? dashboard.datasources.find((d) => d.id === widget.datasourceIds[0])
-      : undefined;
-    setDeviceId(ds?.entityId ?? "");
-    setKeys([...(ds?.keys ?? [])]);
-    setRefresh(ds?.refreshInterval !== undefined ? String(ds.refreshInterval) : "");
-    setValues({ ...(widget.configuration ?? {}) });
-    const slots: Record<string, string> = {};
-    (def.actionSlots ?? []).forEach((slot, i) => {
-      slots[slot.key] = widget.actionIds[i] ?? "";
-    });
-    setSlotActions(slots);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, widgetId]);
+  // Carga el formulario SOLO al abrir o cambiar de widget usando el patrón
+  // "ajustar estado durante el render" (React 19): sin effects ni cascadas
+  // de render. La clave incluye open/widgetId, así reabrir el MISMO widget
+  // recarga el formulario desde el draft; editar el formulario no dispara
+  // el reset (el dashboard no participa en la clave).
+  const formKey = `${open ? "open" : "closed"}-${widgetId ?? "none"}`;
+  if (formKey !== lastFormKey) {
+    setLastFormKey(formKey);
+    if (formKey && widget && def) {
+      const ds = widget.datasourceIds[0]
+        ? dashboard.datasources.find((d) => d.id === widget.datasourceIds[0])
+        : undefined;
+      setTitle(widget.title);
+      setDeviceId(ds?.entityId ?? "");
+      setKeys([...(ds?.keys ?? [])]);
+      setRefresh(ds?.refreshInterval !== undefined ? String(ds.refreshInterval) : "");
+      setValues({ ...(widget.configuration ?? {}) });
+      const slots: Record<string, string> = {};
+      (def.actionSlots ?? []).forEach((slot, i) => {
+        slots[slot.key] = widget.actionIds[i] ?? "";
+      });
+      setSlotActions(slots);
+    } else {
+      setTitle("");
+      setDeviceId("");
+      setKeys([]);
+      setCustomKey("");
+      setRefresh("");
+      setValues({});
+      setSlotActions({});
+    }
+  }
 
   const selectedDevice = devices.find((d) => d._id === deviceId);
   const deviceKeys = useMemo(() => {

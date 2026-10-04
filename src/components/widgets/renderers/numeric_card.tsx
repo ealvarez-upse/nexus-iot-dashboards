@@ -1,15 +1,13 @@
 import { cn } from "@/lib/utils";
+import { WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
 import {
-  WidgetCard,
-  WidgetHeader,
-  WidgetLoading,
   cfgBool,
   cfgNumber,
   cfgString,
   firstSeries,
   formatValue,
   keyIconFor,
-} from "./shared";
+} from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /** Numeric Card: valor actual grande de la primera clave del datasource. */
