@@ -8,16 +8,18 @@ import { WidgetCard, WidgetHeader, WidgetLoading } from "./shared";
 import {
   cfgNumber,
   cfgString,
-  firstSeries,
   formatValue,
   keyIconFor,
+  latestValueOf,
 } from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
 /** Gauge: medidor radial con rango min–max configurable. */
 export function GaugeRenderer({ widget, config, data }: WidgetRendererProps) {
-  const { key, points } = firstSeries(data, []);
-  const value = points.length > 0 ? points[points.length - 1].value : data.latest[key];
+  // Valor desde la misma fuente autorizada que el resto de widgets: el
+  // WidgetData que entrega WidgetFrame. Fase 2.1: antes la clave quedaba
+  // vacía y el medidor mostraba siempre "—" aunque hubiera datos.
+  const { key, value } = latestValueOf(data);
   const min = cfgNumber(config, "min", 0);
   const max = cfgNumber(config, "max", 100);
   const decimals = cfgNumber(config, "decimals", 1);

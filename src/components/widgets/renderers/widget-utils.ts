@@ -142,3 +142,23 @@ export function firstSeries(
   const key = keys[0] ?? "";
   return { key, points: (key && data.series[key]) || [] };
 }
+
+/** Claves observables en los datos, en el orden en que llegan del provider. */
+export function seriesKeys(data: WidgetData): string[] {
+  return data.series ? Object.keys(data.series) : [];
+}
+
+/**
+ * Valor actual de un widget de clave única (numeric_card/gauge/status_card):
+ * último punto de la primera serie observada, con `latest` como respaldo.
+ * Misma fuente autorizada que el resto de widgets: el WidgetData que entrega
+ * useWidgetData (series/latest del provider). 0 es un valor válido: solo
+ * undefined se trata como ausencia (contrato: latest es number | undefined).
+ */
+export function latestValueOf(
+  data: WidgetData,
+): { key: string; value: number | undefined } {
+  const { key, points } = firstSeries(data, seriesKeys(data));
+  const value = points.length > 0 ? points[points.length - 1].value : data.latest[key];
+  return { key, value };
+}

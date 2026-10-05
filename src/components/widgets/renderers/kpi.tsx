@@ -8,6 +8,7 @@ import {
   firstSeries,
   formatValue,
   keyIconFor,
+  seriesKeys,
 } from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
@@ -37,7 +38,7 @@ const AGG_LABEL: Record<string, string> = {
 
 /** KPI: agregado de la ventana configurada + tendencia vs ventana previa. */
 export function KpiRenderer({ widget, config, data }: WidgetRendererProps) {
-  const { key, points } = firstSeries(data, []);
+  const { key, points } = firstSeries(data, seriesKeys(data));
   const agg = cfgString(config, "aggregation", "last");
   const windowMin = cfgNumber(config, "windowMinutes", 60);
   const showDelta = cfgBool(config, "showDelta", true);

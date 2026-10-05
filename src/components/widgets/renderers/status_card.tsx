@@ -5,9 +5,9 @@ import {
   cfgNumber,
   cfgOptionalNumber,
   cfgString,
-  firstSeries,
   formatValue,
   keyIconFor,
+  latestValueOf,
 } from "./widget-utils";
 import type { WidgetRendererProps } from "@/lib/dashboard/widget-def";
 
@@ -45,8 +45,7 @@ function statusOf(
 
 /** Status Card: valor actual + estado semántico según rangos configurados. */
 export function StatusCardRenderer({ widget, config, data }: WidgetRendererProps) {
-  const { key, points } = firstSeries(data, []);
-  const value = points.length > 0 ? points[points.length - 1].value : data.latest[key];
+  const { key, value } = latestValueOf(data);
   const unit = cfgString(config, "unit", "");
   const decimals = cfgNumber(config, "decimals", 2);
   const color = cfgString(config, "color", "#0891b2");
